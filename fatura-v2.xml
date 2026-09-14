@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Nesta versão, o numero da fatura passou a ser um atributo id no elemento cabecalho. -->
+<!-- Também temos dois produtos na mesma fatura, sem criar nomes diferentes para cada um. -->
+<fatura>
+  <cabecalho id="2026/001">
+    <data>2026-09-14</data>
+  </cabecalho>
+
+  <cliente>
+    <nome>Maria Silva</nome>
+    <morada>Rua das Flores, 123, Porto</morada>
+    <telefone>912345678</telefone>
+  </cliente>
+
+  <produtos>
+    <produto>
+      <codigo>ABC-100</codigo>
+      <designacao>Caneta esferográfica azul</designacao>
+      <quantidade>2</quantidade>
+      <preco>1.50</preco>
+    </produto>
+
+    <produto>
+      <codigo>XYZ-220</codigo>
+      <designacao>Bloco de notas A5</designacao>
+      <quantidade>1</quantidade>
+      <preco>3.20</preco>
+    </produto>
+  </produtos>
+</fatura>
