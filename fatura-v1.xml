@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fatura>
+  <cabecalho>
+    <numero>2026/001</numero>
+    <data>2026-09-14</data>
+  </cabecalho>
+
+  <cliente>
+    <nome>Maria Silva</nome>
+    <morada>Rua das Flores, 123, Porto</morada>
+    <telefone>912345678</telefone>
+  </cliente>
+
+  <produtos>
+    <produto>
+      <codigo>ABC-100</codigo>
+      <designacao>Caneta esferográfica azul</designacao>
+      <quantidade>2</quantidade>
+      <preco>1.50</preco>
+    </produto>
+  </produtos>
+</fatura>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<bookstore>
+  <book category="programming">
+    <title>Aprendendo XML</title>
+    <author>João da Silva</author>
+    <price value="29.90"/>
+    <year>2022</year>
+  </book>
+
+  <book category="programming">
+    <title>Programação em Java</title>
+    <author>Maria Oliveira</author>
+    <price value="49.90"/>
+    <year>2023</year>
+  </book>
+
+  <book category="web">
+    <title>Desenvolvimento Web</title>
+    <author>Carlos Pereira</author>
+    <price value="39.90"/>
+    <year>2023</year>
+  </book>
+</bookstore>
