@@ -72,6 +72,3 @@ Em resumo, validar cedo reduz falhas de execução e deixa o processamento do da
 
 ---
 
-## Conclusão
-
-O JSON é uma forma compacta e eficaz de representar dados, mas a sua sintaxe permissiva em termos de estrutura não garante que os dados sejam úteis. O JSON Schema preenche esse vazio: ele define o contrato que o documento tem de cumprir antes de ser processado. A combinação correta entre estrutura, tipos, restrições e validação é o que permite que diferentes sistemas troquem informação de forma previsível e interoperável.
