@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sugestões dos alunos</title>
+    <link rel="stylesheet" href="/estilos.css">
+  </head>
+  <body>
+    <main class="pagina">
+      <header class="cabecalho">
+        <p class="sobretitulo">Aplicações para a Internet III</p>
+        <h1>Sugestões dos alunos</h1>
+        <p>Autentique-se para consultar as sugestões disponíveis para o seu perfil.</p>
+      </header>
+
+      <p id="mensagem" class="mensagem" role="alert" aria-live="assertive" hidden>
+        <strong>Erro:</strong>
+        <span id="mensagem-texto"></span>
+      </p>
+
+      <section id="area-entrada" class="cartao" aria-labelledby="titulo-entrada">
+        <h2 id="titulo-entrada">Iniciar sessão</h2>
+        <form id="formulario-entrada">
+          <label for="utilizador">Utilizador</label>
+          <input
+            id="utilizador"
+            name="utilizador"
+            type="text"
+            autocomplete="username"
+            required
+          >
+
+          <label for="palavra-passe">Palavra-passe</label>
+          <input
+            id="palavra-passe"
+            name="palavraPasse"
+            type="password"
+            autocomplete="current-password"
+            minlength="8"
+            maxlength="128"
+            required
+          >
+
+          <button id="botao-entrar" type="submit">Entrar</button>
+        </form>
+      </section>
+
+      <section id="area-sessao" class="cartao" aria-labelledby="titulo-sessao" hidden>
+        <h2 id="titulo-sessao">Sessão ativa</h2>
+        <dl class="dados-sessao">
+          <div>
+            <dt>Utilizador</dt>
+            <dd id="nome-utilizador"></dd>
+          </div>
+          <div>
+            <dt>Papel</dt>
+            <dd id="papel-utilizador"></dd>
+          </div>
+          <div>
+            <dt>Expira às</dt>
+            <dd><time id="hora-expiracao"></time></dd>
+          </div>
+          <div>
+            <dt>Tempo restante</dt>
+            <dd id="tempo-restante" aria-live="off"></dd>
+          </div>
+        </dl>
+
+        <div class="acoes">
+          <button id="botao-sugestoes" type="button">As minhas sugestões</button>
+          <button id="botao-terminar" class="botao-secundario" type="button">Terminar sessão</button>
+        </div>
+
+        <ul id="lista-sugestoes" class="lista-sugestoes" aria-label="Sugestões"></ul>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
