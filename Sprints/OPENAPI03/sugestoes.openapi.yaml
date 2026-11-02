@@ -2,6 +2,9 @@ openapi: 3.0.3
 
 info:
   title: API de Sugestões dos Alunos
+  # Versão semântica MAJOR.MINOR.PATCH. Em relação à 2.0.0 (API02) só houve acréscimos: o cookieSessao
+  # como alternativa no security da raiz (o tokenJWT continua aceite), as operações /sessao, o schema
+  # Sessao e os cabeçalhos SetCookie*. Nenhuma operação, schema ou resposta da 2.0.0 foi removida ou alterada.
   version: 2.1.0
   description: API de sugestões dos alunos que exige autenticação. O token pode ser enviado no cabeçalho Authorization ou no cookie de sessão.
 
@@ -9,6 +12,8 @@ servers:
   - url: https://api.estgv.exemplo/v2
 
 # Dois elementos separados = basta um deles (token OU cookie).
+# Regra do OpenAPI: os elementos da lista são alternativas; os esquemas dentro do mesmo elemento
+# são exigidos todos no mesmo pedido. Uma operação com security: [] substitui esta lista e é pública.
 security:
   - tokenJWT: []
   - cookieSessao: []
@@ -352,6 +357,7 @@ paths:
         default:
           $ref: '#/components/responses/ErroGenerico'
 
+  # Operação da API02, sem alterações: devolve o token no corpo, para ser enviado no cabeçalho Authorization.
   /tokens:
     post:
       operationId: criarToken
@@ -390,6 +396,7 @@ paths:
       operationId: criarSessao
       summary: Autenticar um utilizador e iniciar uma sessão por cookie
       description: Valida as credenciais da mesma forma que criarToken e guarda o token no cookie sessao. O token não é devolvido no corpo.
+      # É esta operação que cria o cookie, por isso ainda não há token para exigir
       security: []
       requestBody:
         required: true
@@ -407,6 +414,8 @@ paths:
               $ref: '#/components/headers/NoStore'
           content:
             application/json:
+              # Ao contrário de Token, o corpo não traz o token: este vai só no Set-Cookie e fica
+              # guardado pelo browser. O corpo traz os dados que o cliente precisa de mostrar
               schema:
                 $ref: '#/components/schemas/Sessao'
               example:
@@ -421,6 +430,8 @@ paths:
         default:
           $ref: '#/components/responses/ErroGenerico'
 
+    # Sem security próprio: herda o da raiz (token ou cookie). Como o cookie é HttpOnly e o
+    # JavaScript não o lê, é por aqui que o cliente obtém nome, papel e expiração ao abrir a página.
     get:
       operationId: obterSessao
       summary: Obter os dados da sessão atual
@@ -440,6 +451,8 @@ paths:
         default:
           $ref: '#/components/responses/ErroGenerico'
 
+    # Só responde com um Set-Cookie que apaga a cópia do browser. O servidor não guarda sessões,
+    # por isso não há nada a invalidar do lado dele: o JWT continua válido até ao seu exp
     delete:
       operationId: terminarSessao
       summary: Terminar a sessão e apagar o cookie
@@ -471,6 +484,8 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    # Declaração do cookie: type apiKey + in cookie + name sessao. É aceite através do security da
+    # raiz; é criado por POST /sessao (SetCookieSessao) e apagado por DELETE /sessao (SetCookieApagarSessao).
     cookieSessao:
       description: |
         Token JWT (com os mesmos claims de `tokenJWT`) enviado automaticamente pelo browser no cookie `sessao`.
@@ -966,6 +981,8 @@ components:
         type: string
         example: 'sessao=eyJhbGciOi…; Max-Age=900; Path=/v2; Expires=Mon, 26 Oct 2026 15:15:00 GMT; HttpOnly; SameSite=Strict'
 
+    # O servidor não consegue apagar nada no browser: reenvia o cookie com o mesmo nome e o mesmo Path,
+    # vazio e com validade já passada, e o browser descarta-o.
     SetCookieApagarSessao:
       description: Apaga o cookie sessao, indicando uma data de validade já passada.
       schema:

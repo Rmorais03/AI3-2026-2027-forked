@@ -62,6 +62,8 @@ formularioConfiguracoes.addEventListener('change', () => {
 });
 
 // Rascunho (sessionStorage)
+// sessionStorage: um por separador. Mantém-se ao recarregar a página, desaparece ao fechar o
+// separador, não é visto por outros separadores e não é enviado ao servidor
 
 function guardarRascunho() {
   try {
@@ -75,6 +77,8 @@ function guardarRascunho() {
   }
 }
 
+// Chamada por iniciarSessao: ao entrar e ao abrir ou recarregar a página com sessão ativa
+// Num separador novo o sessionStorage está vazio, por isso o formulário aparece vazio
 function reporRascunho() {
   formularioSugestao.reset();
 
@@ -116,6 +120,8 @@ function terminarSessao(texto = '') {
   }
 
   // O rascunho é de quem saiu; não deve aparecer a quem entrar a seguir.
+  // O sessionStorage só é limpo ao fechar o separador: sem esta linha, quem entrasse a seguir
+  // no mesmo separador veria o texto de quem saiu
   apagarRascunho();
   estadoSugestao.textContent = '';
   formulario.reset();
@@ -137,6 +143,8 @@ function atualizarTempoRestante() {
   tempoRestante.textContent = formatarTempo(segundos);
 }
 
+// sessao é o corpo da resposta de POST /v2/sessao (ao entrar) ou de GET /v2/sessao (ao abrir
+// a página). O nome e o papel vêm daí, o token nunca passa pelo JavaScript
 function iniciarSessao(sessao) {
   const expiracao = Date.parse(sessao?.expiracao);
   if (
@@ -176,9 +184,11 @@ async function lerRespostaJson(resposta) {
 }
 
 // Ao abrir a página, o browser envia o cookie sessao (se existir) em GET /v2/sessao.
+// Na API02 o token estava numa variável, que desaparece ao recarregar a página. Aqui o browser guarda
+// o cookie (até Max-Age) e junta-o a este fetch, por isso a sessão é recuperada sem pedir a palavra-passe
 async function verificarSessao() {
   // Se o servidor falhar, não se sabe se a sessão terminou, por isso só se mostra
-  // o erro. Assim o rascunho não se perde.
+  // o erro. Assim o rascunho não se perde
   let resposta;
   try {
     resposta = await fetch('/v2/sessao');
@@ -359,6 +369,7 @@ formularioSugestao.addEventListener('submit', async (evento) => {
       return;
     }
 
+    // Só se apaga depois do 201: se o POST falhar (400, sem rede), o texto mantém-se no formulário e no sessionStorage
     apagarRascunho();
     estadoSugestao.textContent = `Sugestão «${dados.titulo}» criada com o número ${dados.id}.`;
     await carregarSugestoes();

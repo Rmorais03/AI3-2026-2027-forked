@@ -22,12 +22,16 @@ const categorias = ['instalacoes', 'ensino', 'servicos', 'atividades', 'outra'];
 app.disable('x-powered-by');
 app.use(express.json());
 
+// devolve o token no corpo, para clientes que usam o cabeçalho Authorization
 app.post('/v2/tokens', criarToken);
 
+// POST e DELETE são públicas (antes de entrar ainda não há token; sair tem de funcionar mesmo com o token expirado) 
+// GET exige token, que pode vir do cookie ou do Authorization
 app.post('/v2/sessao', criarSessao);
 app.get('/v2/sessao', exigirToken, obterSessao);
 app.delete('/v2/sessao', terminarSessao);
 
+// exigirToken aceita o token do Authorization ou do cookie sessao; daqui para baixo só se usa req.utilizador
 app.get('/v2/sugestoes', exigirToken, (req, res) => {
   // Um aluno só vê as suas; os serviços veem todas
   const itens = req.utilizador.papel === 'aluno'

@@ -1,3 +1,5 @@
+// Chave fixa, que não depende de quem tem sessão iniciada. O localStorage pertence a este browser,
+// neste computador e nesta origem (http://localhost:3000): todos os utilizadores deste browser leem o mesmo valor.
 const chave = 'configuracoes';
 
 export const valoresPermitidos = {
@@ -12,6 +14,9 @@ export const configuracoesPorOmissao = Object.freeze({
 
 // O utilizador pode alterar o valor guardado nas ferramentas de programador,
 // por isso cada opção é validada e, se for inválida, usa-se o valor por omissão
+// Chave inexistente ou JSON inválido: valores por omissão. Opção fora de valoresPermitidos
+// (ex: {"tema":"roxo"}): só essa opção volta ao valor por omissão. Esta função só lê, por isso
+// o valor inválido continua guardado até o utilizador mudar uma configuração
 export function lerConfiguracoes() {
   let guardadas;
   try {
@@ -34,6 +39,8 @@ export function lerConfiguracoes() {
   return configuracoes;
 }
 
+// localStorage: mantém-se depois de fechar o separador e o browser, é partilhado por
+// todos os separadores da mesma origem e nunca é enviado ao servidor.
 export function guardarConfiguracoes(configuracoes) {
   // O localStorage só guarda texto, daí o JSON.stringify
   try {

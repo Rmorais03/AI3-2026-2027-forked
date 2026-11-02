@@ -132,6 +132,11 @@ export async function criarSessao(req, res) {
   // Vai-se buscar o exp ao próprio token para a expiração bater certo
   const { exp } = jwt.decode(token);
 
+  // httpOnly: o JavaScript da página não consegue ler o cookie (não aparece em document.cookie)
+  // sameSite 'strict': só é enviado em pedidos feitos a partir do próprio site
+  // path '/v2': só é enviado para endereços começados por /v2
+  // maxAge: no Express é em milissegundos (validade está em segundos, daí * 1000). Com Max-Age o
+  // cookie sobrevive ao fecho do browser e expira ao mesmo tempo que o exp do JWT
   res.cookie('sessao', token, {
     httpOnly: true,
     sameSite: 'strict',
@@ -144,6 +149,8 @@ export async function criarSessao(req, res) {
   );
 }
 
+// Não lê nada do pedido: os dados vêm de req.utilizador, preenchido por exigirToken a partir do
+// payload do token. É assim que o cliente sabe o nome sem conseguir ler o cookie.
 export function obterSessao(req, res) {
   res.set('Cache-Control', 'no-store');
   const { sub, nome, papel, exp } = req.utilizador;
@@ -151,6 +158,8 @@ export function obterSessao(req, res) {
 }
 
 // Apenas pede ao browser que apague o cookie: o token não é revogado
+// Não altera nada no servidor. Quem tiver copiado o valor do cookie
+// antes pode continuar a usá-lo até ao exp do JWT
 export function terminarSessao(req, res) {
   res.set('Cache-Control', 'no-store');
   // O path tem de ser o mesmo de quando o cookie foi criado, senão o browser não o apaga
@@ -170,6 +179,8 @@ function enviarNaoAutenticado(res, tokenInvalido) {
 
 export function exigirToken(req, res, next) {
   // Sem cabeçalho Authorization, o token é lido do cookie sessao
+  // 1º: Authorization: Bearer (cliente da API02, curl). 2º: cookie que o browser envia
+  // sozinho (cliente novo). A partir daqui a verificação é igual para os dois
   let token;
   const cabecalho = req.get('Authorization');
   if (cabecalho) {
@@ -181,6 +192,8 @@ export function exigirToken(req, res, next) {
     if (!token) return enviarNaoAutenticado(res, false);
   }
 
+  // jwt.verify confirma a assinatura, o algoritmo e o exp. Não consulta nenhum estado
+  // no servidor: um token bem assinado e dentro do prazo é aceite, mesmo depois de DELETE /v2/sessao.
   let payload;
   try {
     payload = jwt.verify(token, segredo, { algorithms: ['HS256'] });
