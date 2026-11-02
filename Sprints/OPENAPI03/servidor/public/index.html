@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sugestões dos alunos</title>
+    <link rel="stylesheet" href="/estilos.css">
+  </head>
+  <body>
+    <main class="pagina">
+      <header class="cabecalho">
+        <p class="sobretitulo">Aplicações para a Internet III</p>
+        <h1>Sugestões dos alunos</h1>
+        <p>Autentique-se para consultar as sugestões disponíveis para o seu perfil.</p>
+      </header>
+
+      <p id="mensagem" class="mensagem" role="alert" aria-live="assertive" hidden>
+        <strong>Erro:</strong>
+        <span id="mensagem-texto"></span>
+      </p>
+
+      <!-- Só é apresentada depois de GET /v2/sessao responder 401. -->
+      <section id="area-entrada" class="cartao" aria-labelledby="titulo-entrada" hidden>
+        <h2 id="titulo-entrada">Iniciar sessão</h2>
+        <form id="formulario-entrada">
+          <label for="utilizador">Utilizador</label>
+          <input
+            id="utilizador"
+            name="utilizador"
+            type="text"
+            autocomplete="username"
+            required
+          >
+
+          <label for="palavra-passe">Palavra-passe</label>
+          <input
+            id="palavra-passe"
+            name="palavraPasse"
+            type="password"
+            autocomplete="current-password"
+            minlength="8"
+            maxlength="128"
+            required
+          >
+
+          <button id="botao-entrar" type="submit">Entrar</button>
+        </form>
+      </section>
+
+      <section id="area-sessao" class="cartao" aria-labelledby="titulo-sessao" hidden>
+        <h2 id="titulo-sessao">Sessão ativa</h2>
+        <dl class="dados-sessao">
+          <div>
+            <dt>Utilizador</dt>
+            <dd id="nome-utilizador"></dd>
+          </div>
+          <div>
+            <dt>Papel</dt>
+            <dd id="papel-utilizador"></dd>
+          </div>
+          <div>
+            <dt>Expira às</dt>
+            <dd><time id="hora-expiracao"></time></dd>
+          </div>
+          <div>
+            <dt>Tempo restante</dt>
+            <dd id="tempo-restante" aria-live="off"></dd>
+          </div>
+        </dl>
+
+        <div class="acoes">
+          <button id="botao-sugestoes" type="button">As minhas sugestões</button>
+          <button id="botao-terminar" class="botao-secundario" type="button">Terminar sessão</button>
+        </div>
+
+        <!-- Apenas para alunos. -->
+        <section id="area-nova-sugestao" class="nova-sugestao" aria-labelledby="titulo-nova-sugestao" hidden>
+          <h3 id="titulo-nova-sugestao">Nova sugestão</h3>
+          <form id="formulario-sugestao">
+            <label for="sugestao-titulo">Título</label>
+            <input
+              id="sugestao-titulo"
+              name="titulo"
+              type="text"
+              minlength="10"
+              maxlength="120"
+              required
+            >
+
+            <label for="sugestao-descricao">Descrição</label>
+            <textarea
+              id="sugestao-descricao"
+              name="descricao"
+              rows="4"
+              minlength="20"
+              maxlength="2000"
+              required
+            ></textarea>
+
+            <label for="sugestao-categoria">Categoria</label>
+            <select id="sugestao-categoria" name="categoria" required>
+              <option value="">Escolha uma categoria</option>
+              <option value="instalacoes">Instalações</option>
+              <option value="ensino">Ensino</option>
+              <option value="servicos">Serviços</option>
+              <option value="atividades">Atividades</option>
+              <option value="outra">Outra</option>
+            </select>
+
+            <button id="botao-submeter" type="submit">Submeter sugestão</button>
+            <p id="estado-sugestao" class="estado-sugestao" role="status"></p>
+          </form>
+        </section>
+
+        <ul id="lista-sugestoes" class="lista-sugestoes" aria-label="Sugestões"></ul>
+      </section>
+
+      <section class="cartao configuracoes" aria-labelledby="titulo-configuracoes">
+        <h2 id="titulo-configuracoes">Configurações</h2>
+        <form id="formulario-configuracoes" class="grelha-configuracoes">
+          <div>
+            <label for="configuracao-tema">Tema</label>
+            <select id="configuracao-tema" name="tema">
+              <option value="claro">Claro</option>
+              <option value="escuro">Escuro</option>
+            </select>
+          </div>
+          <div>
+            <label for="configuracao-ordenacao">Ordenação das sugestões</label>
+            <select id="configuracao-ordenacao" name="ordenacao">
+              <option value="recentes">Mais recentes primeiro</option>
+              <option value="estado">Por estado</option>
+            </select>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
