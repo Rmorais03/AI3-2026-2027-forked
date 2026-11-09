@@ -14,6 +14,7 @@ export async function enviarPendentes(sessao) {
   envioEmCurso = true;
   const versaoAtual = versaoEnvio;
   try {
+    // filtrar pela conta confirmada para não enviar uma pendente com o cookie de outra.
     const pendentes = (await lerPendentes())
       .filter((item) => item.utilizador === sessao.utilizador && !item.erro)
       .sort((a, b) => a.idLocal - b.idLocal);
@@ -39,6 +40,7 @@ export async function enviarPendentes(sessao) {
       controlador = null;
       if (versaoAtual !== versaoEnvio) return { estado: 'cancelado' };
 
+      // sem sessão válida, parar o envio e conservar as pendentes por confirmar.
       if (resposta.status === 401) {
         const restantes = await lerPendentes();
         return {

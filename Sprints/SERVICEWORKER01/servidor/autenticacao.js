@@ -32,8 +32,6 @@ if (
   throw new Error('Configuração inválida: dados/utilizadores.json tem de conter utilizadores com hashes bcrypt.');
 }
 
-// Se o utilizador não existir, compara-se na mesma com o hash, para a
-// resposta demorar o mesmo tempo e não se perceber que o utilizador não existe
 const hashComparacaoUtilizadorInexistente = utilizadores[0].hashPalavraPasse;
 const padraoUtilizador = /^(?:[0-9]{5,8}|[a-z]+\.[a-z]+)$/;
 
@@ -48,8 +46,6 @@ const erroCredenciaisInvalidas = {
   mensagem: 'Utilizador ou palavra-passe inválidos.'
 };
 
-// Usada por POST /v2/tokens e POST /v2/sessao. Devolve o utilizador ou, se as
-// credenciais forem inválidas, envia a resposta de erro e devolve null
 async function verificarCredenciais(req, res) {
   const corpo = req.body;
   const detalhes = [];
@@ -129,14 +125,8 @@ export async function criarSessao(req, res) {
   if (!utilizador) return;
 
   const token = emitirToken(utilizador);
-  // Vai-se buscar o exp ao próprio token para a expiração bater certo
   const { exp } = jwt.decode(token);
 
-  // httpOnly: o JavaScript da página não consegue ler o cookie (não aparece em document.cookie)
-  // sameSite 'strict': só é enviado em pedidos feitos a partir do próprio site
-  // path '/v2': só é enviado para endereços começados por /v2
-  // maxAge: no Express é em milissegundos (validade está em segundos, daí * 1000). Com Max-Age o
-  // cookie sobrevive ao fecho do browser e expira ao mesmo tempo que o exp do JWT
   res.cookie('sessao', token, {
     httpOnly: true,
     sameSite: 'strict',
@@ -149,20 +139,15 @@ export async function criarSessao(req, res) {
   );
 }
 
-// Não lê nada do pedido: os dados vêm de req.utilizador, preenchido por exigirToken a partir do
-// payload do token. É assim que o cliente sabe o nome sem conseguir ler o cookie.
 export function obterSessao(req, res) {
   res.set('Cache-Control', 'no-store');
   const { sub, nome, papel, exp } = req.utilizador;
+  // GET /v2/sessao devolve 200 com os dados que a página não pode ler do cookie.
   return res.status(200).json(criarDadosSessao(sub, nome, papel, exp));
 }
 
-// Apenas pede ao browser que apague o cookie: o token não é revogado
-// Não altera nada no servidor. Quem tiver copiado o valor do cookie
-// antes pode continuar a usá-lo até ao exp do JWT
 export function terminarSessao(req, res) {
   res.set('Cache-Control', 'no-store');
-  // O path tem de ser o mesmo de quando o cookie foi criado, senão o browser não o apaga
   res.clearCookie('sessao', { path: '/v2' });
   return res.status(204).end();
 }
@@ -178,8 +163,6 @@ function enviarNaoAutenticado(res, tokenInvalido) {
 }
 
 export function exigirToken(req, res, next) {
-  // Aceita primeiro Authorization: Bearer; sem esse cabeçalho, lê o cookie sessao
-  // enviado pelo browser. A verificação do token é igual nas duas formas de autenticação.
   let token;
   const cabecalho = req.get('Authorization');
   if (cabecalho) {
@@ -191,8 +174,6 @@ export function exigirToken(req, res, next) {
     if (!token) return enviarNaoAutenticado(res, false);
   }
 
-  // jwt.verify confirma a assinatura, o algoritmo e o exp. Não consulta nenhum estado
-  // no servidor: um token bem assinado e dentro do prazo é aceite, mesmo depois de DELETE /v2/sessao.
   let payload;
   try {
     payload = jwt.verify(token, segredo, { algorithms: ['HS256'] });
