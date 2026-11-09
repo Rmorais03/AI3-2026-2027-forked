@@ -1,5 +1,6 @@
 const nomeBD = 'sugestoes-bd';
 
+// IndexedDB guarda objetos e índices sem bloquear a página como o localStorage síncrono.
 export function abrirBD() {
   return new Promise((resolve, reject) => {
     const pedido = indexedDB.open(nomeBD, 1);
@@ -49,6 +50,7 @@ async function transacao(lojas, modo, executar) {
   });
 }
 
+// lista e hora mudam numa só transação; uma falha mantém a cópia anterior coerente.
 export function substituirSugestoes(lista) {
   return transacao(['sugestoes', 'meta'], 'readwrite', (tx) => {
     const loja = tx.objectStore('sugestoes');
@@ -65,6 +67,7 @@ export function substituirSugestoes(lista) {
   });
 }
 
+// recentes percorre porData em sentido inverso; estado percorre porEstado.
 export function lerSugestoes(ordenacao) {
   return transacao(['sugestoes'], 'readonly', (tx, guardarResultado) => {
     const itens = [];
