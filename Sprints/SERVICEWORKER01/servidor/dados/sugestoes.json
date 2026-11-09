@@ -1,0 +1,46 @@
+[
+  {
+    "id": 42,
+    "titulo": "Melhorar os espaços de estudo",
+    "descricao": "Criar mais espaços de estudo com mesas e tomadas disponíveis.",
+    "categoria": "instalacoes",
+    "numeroAluno": "12345",
+    "estado": "aceite",
+    "dataCriacao": "2026-10-01T10:00:00Z",
+    "dataAtualizacao": "2026-10-05T14:30:00Z",
+    "dataResolucao": null
+  },
+  {
+    "id": 43,
+    "titulo": "Ampliar o horário da biblioteca",
+    "descricao": "Manter a biblioteca aberta durante mais tempo nos períodos de avaliação.",
+    "categoria": "servicos",
+    "numeroAluno": "12345",
+    "estado": "submetida",
+    "dataCriacao": "2026-10-06T09:15:00Z",
+    "dataAtualizacao": "2026-10-06T09:15:00Z",
+    "dataResolucao": null
+  },
+  {
+    "id": 44,
+    "titulo": "Reforçar o apoio informático",
+    "descricao": "Disponibilizar apoio técnico adicional nos laboratórios de informática.",
+    "categoria": "ensino",
+    "numeroAluno": "67890",
+    "estado": "em_analise",
+    "dataCriacao": "2026-10-07T11:20:00Z",
+    "dataAtualizacao": "2026-10-08T08:45:00Z",
+    "dataResolucao": null
+  },
+  {
+    "id": 45,
+    "titulo": "Criar mais atividades culturais",
+    "descricao": "Organizar atividades culturais abertas a todos os estudantes.",
+    "categoria": "atividades",
+    "numeroAluno": "67890",
+    "estado": "resolvida",
+    "dataCriacao": "2026-10-02T13:00:00Z",
+    "dataAtualizacao": "2026-10-10T16:10:00Z",
+    "dataResolucao": "2026-10-10T16:10:00Z"
+  }
+]
