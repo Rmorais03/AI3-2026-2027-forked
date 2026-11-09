@@ -45,6 +45,7 @@ const campoOrdenacao = document.querySelector('#configuracao-ordenacao');
 
 const chaveRascunho = 'rascunhoSugestao';
 
+// O token está no cookie HttpOnly: o cliente não o guarda nem o consegue ler.
 let instanteExpiracao = null;
 let temporizador = null;
 let configuracoes = lerConfiguracoes();
@@ -63,7 +64,6 @@ function apresentarMensagem(texto) {
 }
 
 function atualizarIndicacaoLigacao() {
-  // navigator.onLine informa sobre a rede do dispositivo, não sobre a resposta do servidor.
   const estado = document.body.dataset.estado;
   estadoLigacao.textContent = estado === 'a-verificar' ? ''
     : estado === 'sem-ligacao' ? 'Sem ligação ao servidor.'
@@ -80,7 +80,6 @@ function mudarEstado(estado) {
   areaSessao.hidden = estado !== 'com-sessao';
   areaSemLigacao.hidden = estado !== 'sem-ligacao';
   areaConfiguracoes.hidden = !['com-sessao', 'sem-ligacao'].includes(estado);
-  // sem ligação, não é possível pedir ao servidor que apague o cookie HttpOnly.
   botaoTerminar.disabled = estado === 'sem-ligacao';
   if (temporizadorCopia !== null) {
     window.clearTimeout(temporizadorCopia);
@@ -102,6 +101,8 @@ function formatarTempo(segundos) {
   return `${String(minutos).padStart(2, '0')}:${String(resto).padStart(2, '0')}`;
 }
 
+// Configurações (localStorage)
+
 function aplicarConfiguracoes() {
   document.documentElement.dataset.tema = configuracoes.tema;
   campoTema.value = configuracoes.tema;
@@ -119,6 +120,10 @@ formularioConfiguracoes.addEventListener('change', async () => {
   }
 });
 
+// Rascunho (sessionStorage)
+// sessionStorage: um por separador. Mantém-se ao recarregar a página, desaparece ao fechar o
+// separador, não é visto por outros separadores e não é enviado ao servidor
+
 function guardarRascunho() {
   try {
     sessionStorage.setItem(chaveRascunho, JSON.stringify({
@@ -127,12 +132,16 @@ function guardarRascunho() {
       categoria: campoCategoria.value
     }));
   } catch {
+    // Sem sessionStorage, o rascunho apenas não é guardado.
   }
 }
 
+// Repõe o rascunho deste separador ao entrar, recarregar ou abrir a cópia local sem ligação.
+// Num separador novo o sessionStorage está vazio, por isso o formulário aparece vazio.
 function reporRascunho() {
   formularioSugestao.reset();
 
+  // O valor pode ter sido mexido à mão, por isso cada campo é confirmado antes de ser usado.
   let rascunho;
   try {
     rascunho = JSON.parse(sessionStorage.getItem(chaveRascunho));
@@ -152,11 +161,15 @@ function apagarRascunho() {
   try {
     sessionStorage.removeItem(chaveRascunho);
   } catch {
+    // Sem sessionStorage, não há rascunho para apagar.
   }
   formularioSugestao.reset();
 }
 
+// Guarda a cada alteração. O evento input também apanha a mudança no select.
 formularioSugestao.addEventListener('input', guardarRascunho);
+
+// Sessão (cookie)
 
 function limparSessaoVisual() {
   sessaoAtual = null;
@@ -172,7 +185,6 @@ function limparSessaoVisual() {
   areaNovaSugestao.hidden = true;
 }
 
-// a expiração conserva rascunho e dados locais para permitir retomar após nova entrada.
 function expirarSessao() {
   cancelarEnvioPendentes();
   limparSessaoVisual();
@@ -190,6 +202,8 @@ function atualizarTempoRestante() {
   tempoRestante.textContent = formatarTempo(segundos);
 }
 
+// sessao é o corpo da resposta de POST /v2/sessao (ao entrar) ou de GET /v2/sessao (ao abrir
+// a página). O nome e o papel vêm daí, o token nunca passa pelo JavaScript
 function validarSessao(sessao) {
   const expiracao = Date.parse(sessao?.expiracao);
   if (
@@ -241,7 +255,6 @@ async function prepararDadosDaSessao(sessao) {
   }
 }
 
-// ao confirmar outra conta, apagar a cópia e as pendentes antes de guardar o novo proprietário.
 async function registarProprietario(sessao) {
   validarSessao(sessao);
   const proprietario = await lerProprietario();
@@ -282,7 +295,9 @@ async function lerRespostaJson(resposta) {
   }
 }
 
-// no arranque, GET /v2/sessao confirma a sessão; até à resposta mostra-se «a-verificar».
+// Ao abrir a página, o browser envia o cookie sessao (se existir) em GET /v2/sessao.
+// O browser guarda o cookie até Max-Age e junta-o ao pedido. Assim, uma sessão ainda válida
+// pode ser recuperada depois de recarregar a página, sem pedir de novo a palavra-passe.
 async function verificarSessao() {
   const numeroVerificacao = ++verificacaoAtual;
   apresentarMensagem('');
@@ -291,7 +306,6 @@ async function verificarSessao() {
   try {
     resposta = await fetch('/v2/sessao');
   } catch {
-    // sem resposta do servidor, não se sabe se a sessão ainda é válida.
     if (numeroVerificacao !== verificacaoAtual) return;
     avisoSemLigacao.textContent = 'Não é possível confirmar a sessão neste momento.';
     mudarEstado('sem-ligacao');
@@ -299,7 +313,6 @@ async function verificarSessao() {
   }
   if (numeroVerificacao !== verificacaoAtual) return;
 
-  // o 401 é uma resposta do servidor que confirma a ausência de sessão válida.
   if (resposta.status === 401) {
     if (sessaoConfirmada) expirarSessao();
     else {
@@ -353,7 +366,6 @@ formulario.addEventListener('submit', async (evento) => {
       campoPalavraPasse.focus();
       return;
     }
-    // no POST de entrada, só 200 prossegue para iniciarSessao; os restantes códigos são erro.
     if (resposta.status !== 200) {
       apresentarMensagem(dados.mensagem ?? 'Não foi possível iniciar sessão.');
       return;
@@ -361,7 +373,6 @@ formulario.addEventListener('submit', async (evento) => {
     await registarProprietario(dados);
     campoPalavraPasse.value = '';
     iniciarSessao(dados);
-    // o foco no título orienta quem usa teclado ou leitor de ecrã após a entrada.
     tituloSessao.focus();
   } catch (erro) {
     apresentarMensagem(erro.message);
@@ -380,7 +391,6 @@ function confirmarSaida(quantidade) {
   });
 }
 
-// DELETE precisa do servidor para apagar o cookie HttpOnly; saída confirmada apaga dados locais.
 botaoTerminar.addEventListener('click', async () => {
   botaoTerminar.disabled = true;
   let cookieApagado = false;
@@ -388,6 +398,7 @@ botaoTerminar.addEventListener('click', async () => {
     const pendentes = await lerPendentes();
     if (pendentes.length > 0 && !(await confirmarSaida(pendentes.length))) return;
     cancelarEnvioPendentes();
+    // O cookie é HttpOnly: o JavaScript não o consegue apagar, tem de ser o servidor.
     let resposta;
     try {
       resposta = await fetch('/v2/sessao', { method: 'DELETE' });
@@ -412,7 +423,6 @@ botaoTerminar.addEventListener('click', async () => {
     formulario.reset();
     apresentarMensagem('');
     mudarEstado('sem-sessao');
-    // depois da saída, o foco regressa ao primeiro campo do formulário.
     campoUtilizador.focus();
   } catch (erro) {
     if (cookieApagado) {
@@ -430,6 +440,7 @@ botaoTerminar.addEventListener('click', async () => {
   }
 });
 
+// O browser junta o cookie sessao ao pedido; não é preciso cabeçalho Authorization.
 export async function pedidoAutenticado(url, opcoes = {}) {
   let resposta;
   try {
@@ -446,6 +457,8 @@ export async function pedidoAutenticado(url, opcoes = {}) {
   }
   return resposta;
 }
+
+// Sugestões
 
 function disponibilidadeDoFormulario(disponivel) {
   for (const campo of [campoTitulo, campoDescricao, campoCategoria, botaoSubmeter]) {
@@ -487,7 +500,7 @@ async function carregarCategorias() {
     const categoriaAtual = campoCategoria.value;
     campoCategoria.replaceChildren(escolha, ...opcoes);
     let categoriaRascunho = '';
-    try { categoriaRascunho = JSON.parse(sessionStorage.getItem(chaveRascunho))?.categoria ?? ''; } catch {}
+    try { categoriaRascunho = JSON.parse(sessionStorage.getItem(chaveRascunho))?.categoria ?? ''; } catch { /* Rascunho inválido. */ }
     campoCategoria.value = categoriaAtual || categoriaRascunho;
     disponibilidadeDoFormulario(true);
   } catch {
@@ -555,7 +568,6 @@ async function apresentarSugestoesDaBD() {
   }
 }
 
-// identificar proprietário e hora; mostrar a cópia offline só até à expiração conhecida.
 async function mostrarCopiaLocal() {
   try {
     const proprietario = await lerProprietario();
@@ -612,14 +624,13 @@ async function carregarSugestoes() {
   } catch (erro) {
     if (document.body.dataset.estado === 'com-sessao') {
       apresentarMensagem(`Não foi possível obter as sugestões: ${erro.message}`);
-      try { await apresentarSugestoesDaBD(); } catch {}
+      try { await apresentarSugestoesDaBD(); } catch { /* A cópia local também está indisponível. */ }
     }
   }
 }
 
 botaoSugestoes.addEventListener('click', () => { void carregarSugestoes(); });
 
-// a submissão passa do rascunho deste separador para uma pendente persistente.
 async function guardarPendenteLocal(dados) {
   const proprietario = sessaoAtual ?? proprietarioLocal;
   const expiracao = Date.parse(proprietario?.expiracao);
@@ -657,7 +668,6 @@ formularioSugestao.addEventListener('submit', async (evento) => {
         body: JSON.stringify(dados)
       });
     } catch {
-      // o POST pode ter sido criado antes da falha; sem idempotência, o reenvio pode duplicá-lo.
       if (document.body.dataset.estado === 'sem-ligacao') await guardarPendenteLocal(dados);
       return;
     }
@@ -710,6 +720,7 @@ botaoAtualizar.addEventListener('click', () => {
   emEspera.postMessage({ tipo: 'ativar' });
 });
 
+// As configurações aplicam-se antes de consultar a sessão.
 aplicarConfiguracoes();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {

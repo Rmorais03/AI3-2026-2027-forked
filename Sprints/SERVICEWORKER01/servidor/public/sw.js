@@ -1,6 +1,5 @@
 const CACHE_INTERFACE = 'interface-v1';
 const CACHE_CATEGORIAS = 'dados-publicos';
-// os ficheiros da interface não incluem dados pessoais; estes são preenchidos pela página.
 const ficheirosInterface = [
   '/',
   '/index.html',
@@ -19,7 +18,6 @@ self.addEventListener('install', (evento) => {
   );
 });
 
-// a nova versão remove caches antigas da interface e conserva dados-publicos.
 self.addEventListener('activate', (evento) => {
   evento.waitUntil((async () => {
     const nomes = await caches.keys();
@@ -40,7 +38,6 @@ async function interfaceCachePrimeiro(pedido) {
   return resposta;
 }
 
-// a Cache API não aplica max-age; devolvemos a cópia e tentamos atualizá-la para o próximo acesso.
 function categoriasComAtualizacao(evento) {
   const pedido = evento.request;
   const respostaRede = (async () => {
@@ -52,6 +49,7 @@ function categoriasComAtualizacao(evento) {
     return resposta;
   })();
 
+  // Mantém a atualização ativa depois de devolver uma cópia guardada.
   evento.waitUntil(respostaRede.then(() => undefined, () => undefined));
   evento.respondWith((async () => {
     const cache = await caches.open(CACHE_CATEGORIAS);
@@ -60,7 +58,6 @@ function categoriasComAtualizacao(evento) {
   })());
 }
 
-// guardar só interface e categorias públicas; pedidos privados passam à rede, pois o cookie não separa entradas da Cache API.
 self.addEventListener('fetch', (evento) => {
   const pedido = evento.request;
   if (pedido.method !== 'GET') return;
@@ -78,7 +75,6 @@ self.addEventListener('fetch', (evento) => {
   }
 });
 
-// o botão de atualização pede à nova versão em espera para assumir o controlo.
 self.addEventListener('message', (evento) => {
   if (evento.data?.tipo === 'ativar') self.skipWaiting();
 });

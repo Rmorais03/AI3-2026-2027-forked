@@ -29,8 +29,11 @@ const categorias = categoriasPublicas.map(({ codigo }) => codigo);
 app.disable('x-powered-by');
 app.use(express.json());
 
+// devolve o token no corpo, para clientes que usam o cabeçalho Authorization
 app.post('/v2/tokens', criarToken);
 
+// POST e DELETE são públicas (antes de entrar ainda não há token; sair tem de funcionar mesmo com o token expirado) 
+// GET exige token, que pode vir do cookie ou do Authorization
 app.post('/v2/sessao', criarSessao);
 app.get('/v2/sessao', exigirToken, obterSessao);
 app.delete('/v2/sessao', terminarSessao);
@@ -40,7 +43,9 @@ app.get('/v2/categorias', (req, res) => {
   return res.json(categoriasPublicas);
 });
 
+// exigirToken aceita o token do Authorization ou do cookie sessao; daqui para baixo só se usa req.utilizador
 app.get('/v2/sugestoes', exigirToken, (req, res) => {
+  // Um aluno só vê as suas; os serviços veem todas
   const itens = req.utilizador.papel === 'aluno'
     ? sugestoes.filter((sugestao) => sugestao.numeroAluno === req.utilizador.sub)
     : sugestoes;
@@ -60,6 +65,7 @@ function validarTexto(valor, minimo, maximo) {
   return comprimento >= minimo && comprimento <= maximo;
 }
 
+// Primeiro valida o token (401), depois confirma que é aluno (403)
 app.post('/v2/sugestoes', exigirToken, exigirPapel('aluno'), (req, res) => {
   res.set('Cache-Control', 'no-store');
 
@@ -83,14 +89,14 @@ app.post('/v2/sugestoes', exigirToken, exigirPapel('aluno'), (req, res) => {
     return enviarErro(res, 400, 'O corpo do pedido não cumpre o schema SugestaoNova.', detalhes);
   }
 
+  // As novas sugestões ficam apenas em memória: perdem-se quando o servidor reinicia
   const agora = new Date().toISOString();
   const sugestao = {
-    id: Math.max(0, ...sugestoes.map((existente) => existente.id)) + 1,
+    id: Math.max(0, ...sugestoes.map((existente) => existente.id)) + 1, // maior id + 1
     titulo: corpo.titulo,
     descricao: corpo.descricao,
     categoria: corpo.categoria,
-    // o número vem do token validado, nunca do corpo enviado pelo cliente.
-    numeroAluno: req.utilizador.sub,
+    numeroAluno: req.utilizador.sub, // vem do token e não do corpo do pedido
     estado: 'submetida',
     dataCriacao: agora,
     dataAtualizacao: agora,
