@@ -51,6 +51,10 @@ async function transacao(lojas, modo, executar) {
 }
 
 // lista e hora mudam numa só transação; uma falha mantém a cópia anterior coerente.
+// clear, put de cada sugestão e atualizadoEm numa única transação, que é atómica: ou fica tudo
+// gravado, ou nada. Em transações separadas, uma falha a meio (erro, falta de espaço, página
+// fechada) podia deixar a loja vazia, uma lista incompleta ou misturada (antigas + novas), ou um
+// atualizadoEm que não corresponde aos dados guardados.
 export function substituirSugestoes(lista) {
   return transacao(['sugestoes', 'meta'], 'readwrite', (tx) => {
     const loja = tx.objectStore('sugestoes');

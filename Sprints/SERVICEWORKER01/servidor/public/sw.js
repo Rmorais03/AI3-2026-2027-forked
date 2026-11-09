@@ -72,6 +72,10 @@ self.addEventListener('fetch', (evento) => {
     categoriasComAtualizacao(evento);
     return;
   }
+  // Só rede para o resto da API (/v2/sessao, /v2/sugestoes): estas respostas dependem do cookie.
+  // A Cache API identifica cada resposta apenas pelo método e URL (o cookie não conta) e ignora o
+  // Cache-Control, incluindo «private», que só proíbe caches partilhadas (proxies). Se a lista da Ana
+  // fosse guardada, o Bruno, no mesmo browser, receberia a lista da Ana em vez da sua.
   if (url.pathname.startsWith('/v2/')) return;
   if (caminhosInterface.has(url.pathname)) {
     evento.respondWith(interfaceCachePrimeiro(pedido));

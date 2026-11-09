@@ -283,6 +283,9 @@ async function lerRespostaJson(resposta) {
 }
 
 // no arranque, GET /v2/sessao confirma a sessão; até à resposta mostra-se «a-verificar».
+// O cookie é HttpOnly, por isso a página não o lê: o browser junta-o a este pedido e é o servidor
+// que valida o token. Enquanto espera, só se vê «A verificar sessão…».
+// 200 → com-sessao; 401 → sem-sessao; fetch rejeitado → sem-ligacao.
 async function verificarSessao() {
   const numeroVerificacao = ++verificacaoAtual;
   apresentarMensagem('');
