@@ -1,7 +1,7 @@
 import { guardarConfiguracoes, lerConfiguracoes } from './configuracoes.js';
 import {
   acrescentarPendente, adicionarSugestao, descartarPendente, guardarProprietario,
-  lerPendentes, lerProprietario, lerSugestoes, limparBD, substituirSugestoes
+  lerPendentes, lerPendentesDe, lerProprietario, lerSugestoes, limparBD, marcarErro, substituirSugestoes
 } from './bd.js';
 import { cancelarEnvioPendentes, enviarPendentes } from './pendentes.js';
 
@@ -227,6 +227,14 @@ function iniciarSessao(sessao) {
 
 async function prepararDadosDaSessao(sessao) {
   try {
+    // Limpar erros antigos das pendentes do utilizador ao iniciar sessão
+    const pendentes = await lerPendentesDe(sessao.utilizador);
+    for (const p of pendentes) {
+      if (p.erro) {
+        await marcarErro(p.idLocal, null); 
+      }
+    }
+
     await carregarCategorias();
     if (sessaoAtual !== sessao || document.body.dataset.estado !== 'com-sessao') return;
     await carregarSugestoes();
@@ -715,7 +723,7 @@ if ('serviceWorker' in navigator) {
       window.location.reload();
     }
   });
-  navigator.serviceWorker.register('/sw.js').then((registo) => {
+  navigator.serviceWorker.register('/sw.js', { type: 'module' }).then((registo) => {
     registoServiceWorker = registo;
     mostrarAtualizacaoSeDisponivel(registo);
     observarInstalacao(registo, registo.installing);

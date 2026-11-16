@@ -77,6 +77,11 @@ async function sincronizarTudo() {
     const proprietario = await lerProprietario();
     if (!proprietario || !proprietario.utilizador) return;
 
+    const expiracao = Date.parse(proprietario.expiracao);
+    if (Number.isFinite(expiracao) && expiracao <= Date.now()) {
+      return; // Sessão expirada: aborta o PUSH sem fazer nenhum pedido POST!
+    }
+
     const utilizador = proprietario.utilizador;
 
     // 1. FASE PUSH (Enviar pendentes para o servidor)
