@@ -62,6 +62,14 @@ paths:
       operationId: criarSugestao
       summary: Submeter uma sugestão
       description: Apenas alunos podem submeter sugestões. O número de aluno é obtido do token.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Chave UUID opcional para garantir a idempotência do POST.
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -76,6 +84,10 @@ paths:
               $ref: '#/components/headers/Location'
             Cache-Control:
               $ref: '#/components/headers/NoStore'
+            Idempotent-Replayed:
+              description: Indica se a resposta foi recuperada de um pedido já processado anteriormente.
+              schema:
+                type: boolean
           content:
             application/json:
               schema:
@@ -86,6 +98,50 @@ paths:
           $ref: '#/components/responses/NaoAutenticado'
         '403':
           $ref: '#/components/responses/Proibido'
+        default:
+          $ref: '#/components/responses/ErroGenerico'
+  
+  /sugestoes/alteracoes:
+    get:
+      operationId: listarAlteracoesSugestoes
+      summary: Obter alterações feitas no servidor desde um determinado cursor
+      description: Devolve as sugestões alteradas/criadas com versão superior ao parâmetro desde, protegido por cookie de sessão.
+      parameters:
+        - name: desde
+          in: query
+          required: true
+          description: Número da versão do último cursor conhecido pelo cliente.
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: Lista de alterações e novo cursor.
+          headers:
+            Cache-Control:
+              description: Cache privada sem armazenamento.
+              schema:
+                type: string
+                enum: ['private, no-store']
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alteracoes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Sugestao'
+                  cursor:
+                    type: integer
+                    minimum: 0
+                required:
+                  - alteracoes
+                  - cursor
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
         default:
           $ref: '#/components/responses/ErroGenerico'
 
@@ -477,6 +533,10 @@ components:
               format: date-time
               nullable: true
               readOnly: true
+            versao:
+            type: integer
+            minimum: 1
+            readOnly: true
           required:
             - id
             - numeroAluno
@@ -484,6 +544,7 @@ components:
             - dataCriacao
             - dataAtualizacao
             - dataResolucao
+            - versao
 
     AcompanhamentoNovo:
       type: object
