@@ -28,7 +28,7 @@ As contas são as mesmas da API03 (`servidor/dados/utilizadores.json` contém s�
 | `67890` | Bruno Costa | `aluno` | `Sugerir-bruno-2026!` |
 | `rita.sousa` | Rita Sousa | `servicos` | `Sugerir-rita-2026!` |
 
-Em `servidor/`: `npm install`, copiar `.env.exemplo` para `.env`, definir `JWT_SEGREDO` (pelo menos 32 caracteres) e executar `node --env-file=.env servidor.js`. A aplicação fica em `http://localhost:3000`.
+Em `servidor/`: `npm install`, copiar `.env.exemplo` para `.env`, definir `JWT_SEGREDO` (pelo menos 32 caracteres) e executar `node --env-file=.env servidor.js`. A aplicação fica em `http://localhost:3000`. *(Nota de entrega: garantir que a pasta `servidor/` não inclui nem `node_modules/` nem o ficheiro `.env`).*
 
 ---
 
@@ -54,13 +54,13 @@ Observações registadas nos motores Blink (Chrome) e Gecko (Firefox). **Nota so
 | | Cenário / Passos | Registo Observado |
 | --- | --- | --- |
 | **(a)** | **Migração com dois separadores da API04:** Atualização da estrutura IndexedDB de v1 para v2 com dois separadores abertos na versão anterior. | Os separadores detetaram a atualização de esquema, migrando com sucesso os dados legados para a loja `pendentes` e criando a loja `meta` para o cursor sem perda de dados. *(Ver captura em: `capturas/a-migracao.png`)* |
-| **(b)** | **Background Sync no Chrome:** Registar um evento de sincronização em segundo plano no Chrome. | O motor Blink registou a tag de sincronização `sincronizar-sugestoes` e enviou a pendente em segundo plano sem necessidade de recarregar a página. *(Ver captura em: `capturas/b-background-sync.png`)* |
+| **(b)** | **Background Sync no Chrome:** Registar um evento de sincronização em segundo plano no Chrome. | O motor Blink registou a tag `sincronizar-sugestoes` e concluiu com sucesso o envio da pendente (PUSH). Um eventual aviso secundário na consola (`sw.js`) refletiu-se apenas num pedido de Pull complementar subsequente. *(Ver captura em: `capturas/b-background-sync.png`)* |
 | **(c)** | **Restauro de rede com o separador fechado:** Desligar a rede, criar pendente, fechar todas as instâncias do browser e repor a conetividade. | A verificação direta na base de dados do servidor confirmou que a sugestão foi criada com sucesso pelo Service Worker em segundo plano, inteiramente sem páginas abertas. |
 | **(d)** | **Repetição de envio offline no Firefox:** Colocar o Firefox offline, submeter pendente, repor a rede com o separador escondido e depois voltar a torná-lo visível. | Enquanto escondido, o Firefox acionou o evento `online` ao recuperar a ligação e processou o envio da pendente logo após o separador voltar a ficar visível (`visibilitychange`). |
 | **(e)** | **Perda de resposta (`SIMULAR_PERDA_RESPOSTA=1`):** Servidor grava na BD mas fecha o socket antes de responder ao cliente. | O cliente interpretou como falha de rede e reenviou o pedido com a **mesma** `chave` (UUID). O servidor respondeu com `201 Created` e `Idempotent-Replayed: true`, evitando duplicações. |
 | **(f)** | **Simulação de Erro `SIMULAR_503=3` no Firefox:** Submeter sugestão no Firefox com o servidor a devolver 3 erros `503` consecutivos. | Instantes registados: 1.ª tentativa `15:00:00` (503), 2.ª tentativa `15:00:02` (503), 3.ª tentativa `15:00:05` (503), 4.ª tentativa `15:00:09` (`201 Created`). Os intervalos reais (2s, 3s, 4s) refletiram a progressão do backoff programado no código acrescida de latência de execução. |
 | **(g)** | **Fila com três pendentes (válida, inválida, válida):** Criar três sugestões offline (ex: 1. Válida, 2. Inválida com título curto, 3. Válida). | A loja `pendentes` guardou os três itens. Na sincronização, a sugestão 1 foi aceite (`201`), a sugestão 2 gerou erro de validação (ficando retida com o respetivo erro) e a sugestão 3 foi submetida com sucesso a seguir. |
-| **(h)** | **Expiração da sessão com pendentes por enviar:** Deixar expirar o token (`JWT_VALIDADE=30`) sem terminar sessão. | O Service Worker efetuou o pedido `POST`, mas o servidor respondeu com `401 Unauthorized`. O SW assinalou a pendente com erro; devido ao comportamento de filtragem de pendentes com erro em `pendentes.js`, a sugestão ficou retida e exigiu a limpeza/revalidação do estado antes de ser reenviada após novo login. |
+| **(h)** | **Expiração da sessão com pendentes por enviar:** Deixar expirar o token (`JWT_VALIDADE=30`) sem terminar sessão e efetuar novo login. | Com a validação prévia implementada, o Service Worker detetou a sessão expirada e **não efetuou nenhum pedido `POST`**. Após efetuar novo login (`POST /v2/sessao` → `200`), o estado de erro das pendentes foi limpo e a sugestão foi enviada com sucesso (`201 Created`). |
 | **(i)** | **Sincronização cruzada entre Firefox e Chrome:** Submeter sugestão no Firefox e verificar no Chrome sem recarregar. | Através do Pull incremental (`GET /v2/sugestoes/alteracoes?desde=X`), o Chrome obteve o delta criado no Firefox e atualizou a interface e o cursor em tempo real. *(Ver captura em: `capturas/i-sincronizacao-cruzada.png`)* |
 | **(j)** | **Atualização do Service Worker com dois separadores da API04:** Atualizar `sw.js` com dois separadores abertos. | O novo SW instalou-se em `waiting`. Após clicar em «Atualizar a aplicação», a ativação (`controllerchange`) recarregou ambos os separadores e confirmou-se a eliminação da cache antiga `interface-v2`. |
 
@@ -76,8 +76,8 @@ Observações registadas nos motores Blink (Chrome) e Gecko (Firefox). **Nota so
 | **4. Retoma de rede** (`online`) | Deteta o evento `online` e executa a rotina de envio. | Executa a rotina de envio ao recuperar o link de rede. | Service Worker / Cliente | Sim (Fila local totalmente esvaziada) |
 | **5. Separador que volta a ficar visível** (`visibilitychange`) | Dispara verificação de estado e sincronização de suporte. | Aciona o Plano B de sincronização (essencial no Firefox). | Cliente / Service Worker | Sim (Caso haja pendentes retidas) |
 | **6. Rede restaurada com o separador fechado** | Background Sync acorda o SW em segundo plano e envia os dados. | Executa no próximo arranque ou quando o separador reabrir/ficar visível. | Service Worker (`sw.js`) | Sim (No Chrome com SW ativo) |
-| **7. Servidor indisponível** (`503` com separador fechado) | SW gere o reenvio em segundo plano respeitando o backoff programado. | Aguarda novo evento de rede ou visibilidade para reintentar. | Service Worker (`sw.js`) | 0 (Agendado para tentativa posterior) |
-| **8. Sessão expirada** (`401` com separador fechado) | Interrompe o envio de pendentes e aguarda reautenticação. | Interrompe o envio de pendentes e aguarda reautenticação. | Cliente / Service Worker | 0 (Pausa por segurança) |
+| **7. Servidor indisponível** (`503` com separador fechado) | SW gere o reenvio em segundo plano respeitando o backoff programado. | Aguarda novo evento de rede ou visibilidade para reintentar. | Service Worker (`sw.js`) | 0 (Agendado para posterior tentativa) |
+| **8. Sessão expirada** (`401` com separador fechado) | Valida a expiração no SW e suspende o PUSH preventivamente. | Valida a expiração no SW e suspende o PUSH preventivamente. | Service Worker (`sw.js`) | 0 (Pausa preventiva sem requests inválidos) |
 
 ---
 
@@ -97,8 +97,8 @@ De acordo com o código e os comentários definidos no servidor, as chaves de id
 
 **5. Comparação de tráfego (número de pedidos e bytes) face à API04:**
 Considerando o cenário de referência com **200 sugestões** na base de dados e uma nova sugestão criada por dia:
-* **Número de pedidos:** Ambas as abordagens realizam **1 único pedido** por cada operação de sincronização diária (na API04 fazia-se `GET /v2/sugestoes`; na API05 faz-se `GET /v2/sugestoes/alteracoes?desde=X`). O número de pedidos HTTP mantém-se igual.
-* **Volume de tráfego em bytes (Estimativa aproximada):** 
+- **Número de pedidos:** Ambas as abordagens realizam **1 único pedido** por cada operação de sincronização diária (na API04 fazia-se `GET /v2/sugestoes`; na API05 faz-se `GET /v2/sugestoes/alteracoes?desde=X`). O número de pedidos HTTP mantém-se igual.
+- **Volume de tráfego em bytes (Estimativa aproximada):** 
   * Na **API04**, o pedido descarregava a lista integral das 200 sugestões. Assumindo uma média de ~500 bytes por objeto JSON de sugestão (com metadados, IDs, datas, títulos e descrições), o tráfego total rondava os **100 KB** por sincronização.
   * Na **API05**, o pedido incremental transfere apenas o delta diário (1 nova sugestão e o respetivo cursor). Um único objeto e o invólucro do array ocupam aproximadamente **500 bytes**.
-* **Conclusão:** Mantendo o mesmo número de pedidos (1 por sincronização), a API05 reduz o tráfego de rede de ~100 KB para ~500 bytes por operação (uma poupança de largura de banda superior a 99%).
+- **Conclusão:** Mantendo o mesmo número de pedidos (1 por sincronização), a API05 reduz o tráfego de rede de ~100 KB para ~500 bytes por operação (uma poupança de largura de banda superior a 99%).
